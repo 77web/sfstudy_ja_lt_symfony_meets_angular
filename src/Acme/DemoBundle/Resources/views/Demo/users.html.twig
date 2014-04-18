@@ -1,0 +1,39 @@
+{% extends "AcmeDemoBundle::layout.html.twig" %}
+
+{% block title "Rest frontend demo" %}
+
+{% block head %}
+    {{ parent() }}
+    <script type="text/javascript" src="{{ asset('bundles/acmedemo/js/angular-resource.min.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+    <div ng-app="app" ng-controller="UsersCtrl">
+        <table border="1" ng-if="users.length > 0">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <td>ユーザー名</td>
+                </tr>
+            </thead>
+            <tbody>
+                <tr ng-repeat="user in users">
+                    <td>{% verbatim %}{{ user.id }}{% endverbatim %}</td>
+                    <td>{% verbatim %}{{ user.name }}{% endverbatim %}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script type="text/javascript">
+        angular
+            .module('app', ['ngResource'])
+            .factory('Users', ['$resource', function($resource){
+                return $resource('/app_dev.php/demo/rest/users.json');
+            }])
+            .controller('UsersCtrl', ['$scope', 'Users', function($scope, Users){
+                $scope.users = Users.query();
+            }])
+        ;
+    </script>
+{% endblock %}

@@ -16,6 +16,29 @@ class DemoControllerTest extends WebTestCase
         $this->assertEquals(1, $crawler->filter('script:contains("Fabien")')->count());
     }
 
+    public function testRestApi()
+    {
+        $client = static::createClient();
+        $client->request('GET', '/demo/rest/users.json');
+
+        $this->assertEquals(200, $client->getResponse()->getStatusCode());
+
+        $users = json_decode($client->getResponse()->getContent(), true);
+        $this->assertEquals(5, count($users));
+        $this->assertArrayHasKey('id', $users[0]);
+        $this->assertArrayHasKey('name', $users[0]);
+        $this->assertArrayNotHasKey('introduction', $users[0]);
+    }
+
+    public function testRestFrontend()
+    {
+        $client = static::createClient();
+        $crawler = $client->request('GET', '/demo/users');
+
+        $this->assertEquals(200, $client->getResponse()->getStatusCode());
+        $this->assertEquals(1, $crawler->filter('table tbody tr')->count());
+    }
+
     public function testSecureSection()
     {
         $client = static::createClient();
