@@ -1,0 +1,19 @@
+{% extends 'form_div_layout.html.twig' %}
+
+{% block widget_attributes %}
+{% spaceless %}
+    {% set attr = attr|merge({ 'ng-model': id }) %}
+    {{ parent() }}
+{% endspaceless %}
+{% endblock %}
+
+{% block form_errors %}
+{% spaceless %}
+    <ul ng-if="{{ id }}_errors">
+        <li ng-repeat="error in {{ id }}_errors">
+            {% verbatim %}{{ error }}{% endverbatim %}
+        </li>
+    </ul>
+{{ parent() }}
+{% endspaceless %}
+{% endblock %}

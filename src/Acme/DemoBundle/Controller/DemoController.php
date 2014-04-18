@@ -7,12 +7,13 @@ use JMS\Serializer\SerializationContext;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Acme\DemoBundle\Form\ContactType;
 
 // these import the "@Route" and "@Template" annotations
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
-use Symfony\Component\HttpFoundation\Response;
 
 class DemoController extends Controller
 {
@@ -41,20 +42,52 @@ class DemoController extends Controller
     public function contactAction(Request $request)
     {
         $form = $this->createForm(new ContactType());
+
         $form->handleRequest($request);
-
         if ($form->isValid()) {
-            $mailer = $this->get('mailer');
+            $this->get('session')->getFlashBag()->set('notice', 'メッセージ送信完了！');
 
-            // .. setup a message and send it
-            // http://symfony.com/doc/current/cookbook/email.html
-
-            $request->getSession()->getFlashBag()->set('notice', 'Message sent!');
-
-            return new RedirectResponse($this->generateUrl('_demo'));
+            return new RedirectResponse($this->generateUrl('_demo_contact'));
         }
 
         return array('form' => $form->createView());
+    }
+
+    /**
+     * @param Request $request
+     * @Route("/contact.json", name="_demo_contact_json")
+     * @Method("POST")
+     * @return Response
+     */
+    public function contactSendAction(Request $request)
+    {
+        $form = $this->createForm(new ContactType());
+        $form->handleRequest($request);
+
+        if ($form->isValid()) {
+            // ここに送信処理
+
+            $data = '';
+            $status = 200;
+        } else {
+            $data = [];
+            foreach ($form as $name => $childForm) {
+                /** @var \Symfony\Component\Form\FormInterface $childForm */
+                if (!$childForm->isValid()) {
+                    $data[$name] = [];
+                    foreach ($childForm->getErrors() as $formError) {
+                        /** @var \Symfony\Component\Form\FormError $formError */
+                        $data[$name][] = $formError->getMessage();
+                    }
+                }
+            }
+
+            $status = 500;
+        }
+        $response = new Response($this->get('jms_serializer')->serialize($data, 'json'), $status);
+        $response->headers->set('Content-Type', 'application/json');
+
+        return $response;
     }
 
     /**

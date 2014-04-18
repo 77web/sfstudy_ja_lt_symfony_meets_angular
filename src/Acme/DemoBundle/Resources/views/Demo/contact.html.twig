@@ -1,15 +1,67 @@
 {% extends "AcmeDemoBundle::layout.html.twig" %}
 
-{% block title "Symfony - Contact form" %}
+{% block title "Form submit demo" %}
+{% form_theme form 'AcmeDemoBundle:Form:angular_fields.html.twig' %}
+
+{% block head %}
+    {{ parent() }}
+    <script type="text/javascript" src="{{ asset('bundles/acmedemo/js/jquery.min.js') }}"></script>
+{% endblock %}
 
 {% block content %}
-    <form action="{{ path('_demo_contact') }}" method="POST" id="contact_form">
+    <form action="{{ path('_demo_contact') }}" method="POST" id="contact_form" ng-app="app" ng-controller="ContactCtrl" novalidate="novalidate">
+        <p ng-if="notice" style="background: #ccffcc">{% verbatim %}{{ notice }}{% endverbatim %}</p>
+        <p ng-if="warning" style="background: #ffcccc">{% verbatim %}{{ warning }}{% endverbatim %}</p>
+
         {{ form_errors(form) }}
 
         {{ form_row(form.email) }}
         {{ form_row(form.message) }}
 
         {{ form_rest(form) }}
-        <input type="submit" value="Send" class="symfony-button-grey" />
+        <input type="button" value="angularから送信" class="symfony-button-grey" ng-click="submit()" />
+        <input type="submit" value="Symfonyから送信"/>
     </form>
+
+    <script type="text/javascript">
+        angular
+            .module('app', [])
+            .controller('ContactCtrl', ['$scope', '$http', function($scope, $http){
+                $scope.contact__token = "{{ csrf_token('contact') }}";
+
+                $scope.submit = function(){
+                    var postdata = {
+                        "contact[email]": $scope.contact_email,
+                        "contact[message]": $scope.contact_message,
+                        "contact[_token]": $scope.contact__token
+                    };
+
+                    $scope.warning = null;
+                    $scope.notice = null;
+
+                    $http({
+                            method: 'POST',
+                            url: '/app_dev.php/demo/contact.json',
+                            data: $.param(postdata),
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            }
+                         })
+                        .success(function(data, status, headers, config){
+                            $scope.contact_email = null;
+                            $scope.contact_message = null;
+                            $scope.notice = 'メッセージ送信完了！';
+                        })
+                        .error(function(data, status, headers, config){
+
+                            $scope.warning = '入力データに誤りがあります。';
+                            for (var key in data) {
+                                $scope["contact_" + key + "_errors"] = data[key];
+                            }
+                        })
+                    ;
+                };
+            }])
+        ;
+    </script>
 {% endblock %}

@@ -39,6 +39,47 @@ class DemoControllerTest extends WebTestCase
         $this->assertEquals(1, $crawler->filter('table tbody tr')->count());
     }
 
+    public function testContactForm()
+    {
+        $client = static::createClient();
+        $crawler = $client->request('GET', '/demo/contact');
+
+        $this->assertEquals(200, $client->getResponse()->getStatusCode());
+        $this->assertEquals(1, $crawler->filter('form[ng-app="app"]')->count());
+    }
+
+    /**
+     * @dataProvider provideContactSubmitData
+     */
+    public function testContactSend($submit, $statusCode, $errorFields)
+    {
+        $client = static::createClient();
+        $submit['_token'] = $client->getContainer()->get('form.csrf_provider')->generateCsrfToken('contact');
+
+        $client->request('POST', '/demo/contact.json', [
+            'contact' => $submit
+        ]);
+
+        $this->assertEquals($statusCode, $client->getResponse()->getStatusCode());
+
+        $errors = json_decode($client->getResponse()->getContent(), true);
+        foreach ($errorFields as $field) {
+            $this->assertArrayHasKey($field, $errors);
+        }
+    }
+
+    /**
+     * @return array
+     */
+    public function provideContactSubmitData()
+    {
+        return [
+            [['email' => 'user@example.com', 'message' => 'foo'], 200, []],
+            [['message' => 'foo'], 500, ['email']],
+            [['email' => 'user@example.com'], 500, ['message']],
+        ];
+    }
+
     public function testSecureSection()
     {
         $client = static::createClient();
